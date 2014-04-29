@@ -1,7 +1,9 @@
 (ns gpckwlf.core
+  "Launches gpckwlf"
+  (:require [seesaw.core :refer [invoke-later]]
+            [gpckwlf.app :refer [launch]])
   (:gen-class))
 
 (defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))
+  "Launch gpckwlf"
+  ([& args] (invoke-later (launch))))
