@@ -1,23 +1,27 @@
 (ns gpckwlf.app
   "Main application."
-  (:require [seesaw core forms]))
+  (:require [seesaw core; forms
+             ]))
 
 (def login-username
-  (seesaw.core/text))
+  (seesaw.core/text :id :username))
 
 (def login-password
-  (seesaw.core/password :echo-char \*))
+  (seesaw.core/password :echo-char \*
+                        :id :password))
 
 (def login-button
   (seesaw.core/button :text "Login"))
 
+(def exit-button
+  (seesaw.core/button :text "Exit"))
+
 (def login-panel
   (seesaw.core/grid-panel
    :columns 2
-   :items ["Username"     ""
-           login-username ""
-           "Password"     ""
-           login-password login-button]))
+   :items ["Username"   login-username
+           "Password"   login-password
+           login-button exit-button]))
 
 (comment
   (def login-panel
@@ -45,6 +49,9 @@
 (seesaw.core/listen login-button
                     :action (fn [e] (seesaw.core/show-card! card-panel
                                                            :main-panel)))
+
+(seesaw.core/listen exit-button
+                    :action (fn [e] (System/exit 0)))
 
 (def main-window
   (seesaw.core/frame
