@@ -1,7 +1,7 @@
 (ns gpckwlf.app
   "Main application."
-  (:require [seesaw core; forms
-             ]))
+  (:require [seesaw core]
+            [gpckwlf seesaw]))
 
 (def login-username
   (seesaw.core/text :id :username))
@@ -31,11 +31,13 @@
 
 ; use a border-panel instead
 (def site-tiles
-  (seesaw.core/flow-panel
-   :align :left
-   :hgap 1
-   :vgap 1
-   :items ["These" "will" "be" "tiles"]))
+  (seesaw.core/scrollable
+   (gpckwlf.seesaw/wrap-panel
+    :align :left
+    :items ["These" "will" "be" "tiles." "Look" "how" "they" "rearrange"
+            "themselves." "Isn't" "that" "cool?"])
+   :hscroll :never
+   :vscroll :as-needed))
 
 (def options-button
   (seesaw.core/button :text "Options"))
