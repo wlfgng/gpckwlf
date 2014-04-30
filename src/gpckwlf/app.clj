@@ -29,9 +29,12 @@
      :items ["Username" login-username
              "Password" login-password])))
 
+; use a border-panel instead
 (def site-tiles
-  (seesaw.core/grid-panel
-   :columns 3
+  (seesaw.core/flow-panel
+   :align :left
+   :hgap 1
+   :vgap 1
    :items ["These" "will" "be" "tiles"]))
 
 (def options-button
