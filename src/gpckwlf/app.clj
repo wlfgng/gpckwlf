@@ -134,8 +134,9 @@
 
 (def main-window
   (seesaw.core/frame
-   :title "gpckwlf"
-   :content card-panel
+   :title    "gpckwlf"
+;   :icon     
+   :content  card-panel
    :on-close :exit))
 
 
