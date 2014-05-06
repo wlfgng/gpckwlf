@@ -135,7 +135,8 @@
 (def main-window
   (seesaw.core/frame
    :title    "gpckwlf"
-;   :icon     
+   :icon
+   "https://github.com/wlfgng/gpckwlf/blob/master/icons/16x16/logo.png"
    :content  card-panel
    :on-close :exit))
 
