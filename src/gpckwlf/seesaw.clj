@@ -7,3 +7,10 @@
   ""
   ([& opts]
      (abstract-panel (WrapLayout.) opts)))
+
+(defmacro remove-borders
+  "Removes all borders from button"
+  ([button]
+     `(doto ~button
+        (.setBorder (javax.swing.BorderFactory/createEmptyBorder))
+        (.setContentAreaFilled false))))

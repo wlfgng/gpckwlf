@@ -61,11 +61,17 @@
      (seesaw.core/vertical-panel
       :items [(seesaw.core/horizontal-panel
                :items [tag
-                       (seesaw.core/button
-                        :text "X"
-                        :listen [:action (fn [e] (delete-tile tag))])])]
-      :height tile-height
-      :width  tile-width)))
+                       (gpckwlf.seesaw/remove-borders
+                        (seesaw.core/button
+                            :icon (clojure.java.io/resource
+                                   "gpckwlf/icons/16x16/close.png")
+                                        ;                        :margin 0
+                            :listen [:action (fn [e] (delete-tile tag))]))])
+              ])))
+
+(swap! tiles assoc
+       "Foo" (site-tile "Foo")
+       "Bar" (site-tile "Bar"))
 
 (def login-username
   (seesaw.core/text :id :username))
@@ -93,26 +99,36 @@
      :items ["Username" login-username
              "Password" login-password])))
 
+
+
 ; use a border-panel instead
 (def site-tiles
-  (seesaw.core/scrollable
-   (gpckwlf.seesaw/wrap-panel
-    :align :left
-    :items (concat (vals @tiles)
-                   [add-button])
-;    :items
-;    ["These" "will" "be" "tiles." "Look" "how" "they" "rearrange"
-;     "themselves." "Isn't" "that" "cool?"]
-    )
-   :hscroll :never
-   :vscroll :as-needed))
+  (gpckwlf.seesaw/wrap-panel
+   :align :left
+   :items (concat (vals @tiles)
+                  [add-button])))
+
+(def site-tiles-scroll
+  (seesaw.core/scrollable site-tiles
+                          :hscroll :never
+                          :vscroll :as-needed))
+
+(def refresh-button
+  (seesaw.core/button :icon (clojure.java.io/resource
+                             "gpckwlf/icons/32x32/refresh.png")
+                      :margin 0))
 
 (def options-button
   (seesaw.core/button :text "Options"))
 
-(def main-panel
+(def options-panel
   (seesaw.core/horizontal-panel
-   :items [site-tiles options-button]))
+   :items [refresh-button options-button]))
+
+(def main-panel
+  (seesaw.core/border-panel
+   :north options-panel
+   :center site-tiles))
 
 (def card-panel
   (seesaw.core/card-panel
@@ -132,14 +148,17 @@
                                               (concat [add-button])))
                   (seesaw.bind/property site-tiles :items))
 
+;(println (clojure.java.io/resource "gpckwlf/icons/16x16/logo.png"))
+;(System/exit 0)
+
 (def main-window
   (seesaw.core/frame
    :title    "gpckwlf"
-   :icon
-   "https://github.com/wlfgng/gpckwlf/blob/master/icons/16x16/logo.png"
+   :icon     (clojure.java.io/resource "gpckwlf/icons/16x16/logo.png")
    :content  card-panel
    :on-close :exit))
 
+;(seesaw.core/show-options main-window)
 
 (defn launch
   "Launches the main window"
