@@ -18,6 +18,18 @@
   ([tag]
      (swap! tiles dissoc tag)))
 
+(defn copy-password
+  ([tag]
+     (println "copy the password")))
+
+(defn show-password
+  ([tag]
+     (println "show password popup")))
+
+(defn edit-password
+  ([tag]
+     (println "edit password popup")))
+
 (defn add-form
   ([]
      (seesaw.core/grid-panel
@@ -27,23 +39,24 @@
               "Password" (seesaw.core/password :echo-char \*
                                                :id :password)])))
 
-(defn add-dialog
+(defn add-window
   ([]
      (let [form (add-form)]
        (seesaw.core/dialog
+        :resource ::add-window
         :content form
         :option-type :ok-cancel
         :type :question
         :success-fn (fn [e] (add-tile (seesaw.core/select form [:#items
                                                                :#tag])))))))
-
-(defn add-window
-  ([]
-     (seesaw.core/frame
-      :title "Add site"
-      :content (add-dialog)
-      :resizable? false
-      :on-close :dispose)))
+(comment
+  (defn add-window
+    ([]
+       (seesaw.core/frame
+        :title "Add site"
+        :content (add-dialog)
+        :resizable? false
+        :on-close :dispose))))
 
 (defn add-popup
   ([e]
@@ -55,36 +68,70 @@
   (seesaw.core/button :text "+"
                       :listen [:action add-popup]))
 
+(defn delete-button
+  ([tag]
+     (gpckwlf.seesaw/remove-borders
+      (seesaw.core/button
+       :resource ::delete
+       :listen [:action (fn [e] (delete-tile tag))]))))
+
+(defn site-tile-copy-button
+  ""
+  ([tag]
+     (seesaw.core/button
+      :resource ::copy
+      :listen [:action (fn [e] (copy-password tag))])))
+
+(defn site-tile-show-button
+  ""
+  ([tag]
+     (seesaw.core/button
+      :resource ::show
+      :listen [:action (fn [e] (show-password tag))])))
+
+(defn site-tile-edit-button
+  ""
+  ([tag]
+     (seesaw.core/button
+      :resource ::edit
+      :listen [:action (fn [e] (edit-password tag))])))
+
+(defn site-tile-buttons
+  "Returns the horizontal panel containing the buttons for a site tile with
+  the given tag."
+  ([tag] {:pre (string? tag)}
+     (seesaw.core/horizontal-panel
+      :items [(site-tile-copy-button tag)
+              (site-tile-show-button tag)
+              (site-tile-edit-button tag)])))
+
 (defn site-tile
   "Returns a new site tile with the given tag."
   ([tag] {:pre (string? tag)}
-     (seesaw.core/vertical-panel
-      :items [(seesaw.core/horizontal-panel
-               :items [tag
-                       (gpckwlf.seesaw/remove-borders
-                        (seesaw.core/button
-                            :icon (clojure.java.io/resource
-                                   "gpckwlf/icons/16x16/close.png")
-                                        ;                        :margin 0
-                            :listen [:action (fn [e] (delete-tile tag))]))])
-              ])))
+     (seesaw.core/vertical-panel :items [(seesaw.core/border-panel
+                                          :west tag
+                                          :east (delete-button tag))
+                                         (site-tile-buttons tag)])))
 
 (swap! tiles assoc
        "Foo" (site-tile "Foo")
-       "Bar" (site-tile "Bar"))
+       "Bar" (site-tile "Bar")
+       "Baz" (site-tile "Baz"))
 
 (def login-username
-  (seesaw.core/text :id :username))
+  (seesaw.core/text :id :username
+                    :columns 10))
 
 (def login-password
   (seesaw.core/password :echo-char \*
-                        :id :password))
+                        :id :password
+                        :columns 10))
 
 (def login-button
-  (seesaw.core/button :text "Login"))
+  (seesaw.core/button :resource ::login))
 
 (def exit-button
-  (seesaw.core/button :text "Exit"))
+  (seesaw.core/button :resource ::exit))
 
 (def login-panel
   (seesaw.core/grid-panel
@@ -93,15 +140,6 @@
            "Password"   login-password
            login-button exit-button]))
 
-(comment
-  (def login-panel
-    (seesaw.forms/forms-panel
-     :items ["Username" login-username
-             "Password" login-password])))
-
-
-
-; use a border-panel instead
 (def site-tiles
   (gpckwlf.seesaw/wrap-panel
    :align :left
@@ -114,20 +152,26 @@
                           :vscroll :as-needed))
 
 (def refresh-button
-  (seesaw.core/button :icon (clojure.java.io/resource
-                             "gpckwlf/icons/32x32/refresh.png")
-                      :margin 0))
+  (seesaw.core/button :resource ::refresh
+                      ;; :icon
+                      ;; (clojure.java.io/resource
+                      ;;  "gpckwlf/icons/32x32/refresh.png")
+                      :margin 0
+                      :listen [:action (fn [e] (println "refreshing"))]))
 
-(def options-button
-  (seesaw.core/button :text "Options"))
+(def settings-button
+  (seesaw.core/button :resource ::settings
+                      :margin 0
+                      :listen [:action (fn [e] (println "settings!!"))]))
 
-(def options-panel
+(def settings-panel
   (seesaw.core/horizontal-panel
-   :items [refresh-button options-button]))
+;   :align :right
+   :items [refresh-button settings-button]))
 
 (def main-panel
   (seesaw.core/border-panel
-   :north options-panel
+   :north settings-panel
    :center site-tiles))
 
 (def card-panel
