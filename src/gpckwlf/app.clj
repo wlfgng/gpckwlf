@@ -1,7 +1,7 @@
 (ns gpckwlf.app
   "Main application."
   (:require [seesaw bind core]
-            [gpckwlf seesaw]))
+            [gpckwlf password seesaw]))
 
 (declare add-tile delete-tile site-tile)
 
@@ -20,7 +20,7 @@
 
 (defn copy-password
   ([tag]
-     (println "copy the password")))
+     (gpckwlf.password/text->clipboard tag)))
 
 (defn show-password
   ([tag]
@@ -47,8 +47,8 @@
         :content form
         :option-type :ok-cancel
         :type :question
-        :success-fn (fn [e] (add-tile (seesaw.core/select form [:#items
-                                                               :#tag])))))))
+        :success-fn (fn [e] (add-tile (seesaw.core/text
+                                      (seesaw.core/select form [:#tag]))))))))
 (comment
   (defn add-window
     ([]
