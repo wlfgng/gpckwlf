@@ -3,7 +3,7 @@
   (:require [seesaw bind core]
             [gpckwlf password seesaw]))
 
-(declare add-tile delete-tile site-tile)
+(declare add-tile delete-tile show-window site-tile)
 
 (def tile-width 100)
 (def tile-height 100)
@@ -24,7 +24,9 @@
 
 (defn show-password
   ([tag]
-     (println "show password popup")))
+     (-> (show-window tag)
+         seesaw.core/pack!
+         seesaw.core/show!)))
 
 (defn edit-password
   ([tag]
@@ -47,16 +49,41 @@
         :content form
         :option-type :ok-cancel
         :type :question
-        :success-fn (fn [e] (add-tile (seesaw.core/text
-                                      (seesaw.core/select form [:#tag]))))))))
-(comment
-  (defn add-window
-    ([]
-       (seesaw.core/frame
-        :title "Add site"
-        :content (add-dialog)
-        :resizable? false
-        :on-close :dispose))))
+        :success-fn (fn [e] (-> form
+                               (seesaw.core/select [:#tag])
+                               seesaw.core/text
+                               add-tile))))))
+
+(defn show-hide-password
+  "Show/hide password field."
+  ([password]
+     (seesaw.core/config! password :echo-char
+                          (if (= \* (seesaw.core/config password
+                                                        :echo-char))
+                            (char 0)
+                            \*))))
+
+(defn show-panel
+  "Panel to show site's username and password."
+  ([tag]
+     (let [password (seesaw.core/password :text tag
+                                          :echo-char \*
+                                          :editable? false
+                                          :id :password)]
+       (seesaw.core/grid-panel
+        :columns 3
+        :items ["Username" tag ""
+
+                "Password" password
+                (seesaw.core/button
+                 :resource ::show
+                 :listen [:action (fn [e] (show-hide-password password))])]))))
+
+(defn show-window
+  ([tag]
+     (seesaw.core/dialog
+      :resource ::show-window
+      :content (show-panel tag))))
 
 (defn add-popup
   ([e]
