@@ -3,7 +3,7 @@
   (:require [seesaw bind core]
             [gpckwlf password seesaw]))
 
-(declare add-tile delete-tile show-window site-tile)
+(declare add-tile delete-tile edit-window logout show-window site-tile)
 
 (def tile-width 100)
 (def tile-height 100)
@@ -24,13 +24,13 @@
 
 (defn show-password
   ([tag]
-     (-> (show-window tag)
-         seesaw.core/pack!
-         seesaw.core/show!)))
+     (gpckwlf.seesaw/display-frame (show-window tag))))
 
 (defn edit-password
   ([tag]
-     (println "edit password popup")))
+     (gpckwlf.seesaw/display-frame (edit-window tag))))
+
+
 
 (defn add-form
   ([]
@@ -63,6 +63,47 @@
                             (char 0)
                             \*))))
 
+(defn edit-panel
+  "Panel to edit site's tag, username, and password."
+  ([tag]
+     (let [password (seesaw.core/password :text tag
+                                          :echo-char \*
+                                          :editable? false
+                                          :id :password)]
+       (seesaw.core/grid-panel
+        :columns 3
+        :items ["Tag" (seesaw.core/text :text tag
+                                        :id :tag)
+                ""
+                
+                "Username" (seesaw.core/text :text "Username"
+                                             :id :username)
+                ""
+
+                "Password" password
+                (seesaw.core/button
+                 :resource ::show
+                 :margin 0
+                 :listen [:action (fn [e] (show-hide-password password))])]))))
+
+(defn edit-window
+  ""
+  ([tag]
+     (let [edit-panel (edit-panel tag)]
+       (println "WHYYYYY????:" (type edit-panel))
+       (seesaw.core/dialog
+        :resource ::edit-window
+;        :option-type :ok-cancel
+;        :type :question
+        :content edit-panel
+        :success-fn (fn [e] (-> edit-panel
+                               (seesaw.core/config :item)
+                               (seesaw.core/select [:#tag])
+                               seesaw.core/text
+                               (doto
+                                 delete-tile
+                                 add-tile)))))))
+
 (defn show-panel
   "Panel to show site's username and password."
   ([tag]
@@ -77,22 +118,22 @@
                 "Password" password
                 (seesaw.core/button
                  :resource ::show
+                 :margin 0
                  :listen [:action (fn [e] (show-hide-password password))])]))))
 
 (defn show-window
   ([tag]
+     (println "BUT SOMEHOW THIS IS OK?!?!:" (type (show-panel tag)))
      (seesaw.core/dialog
       :resource ::show-window
       :content (show-panel tag))))
 
 (defn add-popup
   ([e]
-     (-> (add-window)
-         seesaw.core/pack!
-         seesaw.core/show!)))
+     (gpckwlf.seesaw/display-frame (add-window))))
 
 (def add-button
-  (seesaw.core/button :text "+"
+  (seesaw.core/button :resource ::add
                       :listen [:action add-popup]))
 
 (defn delete-button
@@ -107,6 +148,7 @@
   ([tag]
      (seesaw.core/button
       :resource ::copy
+      :margin 0
       :listen [:action (fn [e] (copy-password tag))])))
 
 (defn site-tile-show-button
@@ -114,6 +156,7 @@
   ([tag]
      (seesaw.core/button
       :resource ::show
+      :margin 0
       :listen [:action (fn [e] (show-password tag))])))
 
 (defn site-tile-edit-button
@@ -121,6 +164,7 @@
   ([tag]
      (seesaw.core/button
       :resource ::edit
+      :margin 0
       :listen [:action (fn [e] (edit-password tag))])))
 
 (defn site-tile-buttons
@@ -135,10 +179,10 @@
 (defn site-tile
   "Returns a new site tile with the given tag."
   ([tag] {:pre (string? tag)}
-     (seesaw.core/vertical-panel :items [(seesaw.core/border-panel
-                                          :west tag
-                                          :east (delete-button tag))
-                                         (site-tile-buttons tag)])))
+     (seesaw.core/vertical-panel
+      :items [(seesaw.core/border-panel :west tag
+                                        :east (delete-button tag))
+              (site-tile-buttons tag)])))
 
 (swap! tiles assoc
        "Foo" (site-tile "Foo")
@@ -191,10 +235,16 @@
                       :margin 0
                       :listen [:action (fn [e] (println "settings!!"))]))
 
+
+(def logout-button
+  (seesaw.core/button :resource ::logout
+                      :margin 0
+                      :listen [:action (fn [e] (logout))]))
+
 (def settings-panel
   (seesaw.core/horizontal-panel
 ;   :align :right
-   :items [refresh-button settings-button]))
+   :items [refresh-button settings-button logout-button]))
 
 (def main-panel
   (seesaw.core/border-panel
@@ -206,6 +256,12 @@
    :items [[login-panel :login-panel]
            [main-panel  :main-panel]]))
 
+(defn logout
+  ([]
+     (seesaw.core/show-card! card-panel
+                             :login-panel)))
+
+; this is not how you do it lol
 (seesaw.core/listen login-button
                     :action (fn [e] (seesaw.core/show-card! card-panel
                                                            :main-panel)))
@@ -234,6 +290,4 @@
 (defn launch
   "Launches the main window"
   ([]
-     (-> main-window
-         seesaw.core/pack!
-         seesaw.core/show!)))
+     (gpckwlf.seesaw/display-frame main-window)))

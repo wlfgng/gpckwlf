@@ -1,7 +1,14 @@
 (ns gpckwlf.seesaw
   "Extensions to seesaw"
-  (:require [seesaw.core :refer [abstract-panel]])
+  (:require [seesaw.core :refer [abstract-panel pack! show!]])
   (:import [util.java WrapLayout]))
+
+(defmacro display-frame
+  "Displays the frame"
+  ([frame]
+     `(-> ~frame
+          pack!
+          show!)))
 
 (defn wrap-panel
   ""
