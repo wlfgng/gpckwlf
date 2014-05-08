@@ -3,7 +3,8 @@
   (:require [seesaw bind core]
             [gpckwlf password seesaw]))
 
-(declare add-tile delete-tile edit-window logout show-window site-tile)
+(declare add-tile delete-tile edit-window logout
+         show-panel show-window site-tile)
 
 (def tile-width 100)
 (def tile-height 100)
@@ -68,19 +69,21 @@
   ([tag]
      (let [password (seesaw.core/password :text tag
                                           :echo-char \*
-                                          :editable? false
                                           :id :password)]
        (seesaw.core/grid-panel
         :columns 3
-        :items ["Tag" (seesaw.core/text :text tag
-                                        :id :tag)
-                ""
+        :items ["Tag"
+                (seesaw.core/text :text tag
+                                  :id :tag)
+                "",
                 
-                "Username" (seesaw.core/text :text "Username"
-                                             :id :username)
-                ""
+                "Username"
+                (seesaw.core/text :text "Username"
+                                  :id :username)
+                "",
 
-                "Password" password
+                "Password"
+                password
                 (seesaw.core/button
                  :resource ::show
                  :margin 0
@@ -89,20 +92,21 @@
 (defn edit-window
   ""
   ([tag]
-     (let [edit-panel (edit-panel tag)]
-       (println "WHYYYYY????:" (type edit-panel))
+     (let [edit-panel (edit-panel tag)
+           update-tag (fn [new-tag]
+                        (delete-tile tag)
+                        (add-tile new-tag))]
        (seesaw.core/dialog
         :resource ::edit-window
-;        :option-type :ok-cancel
-;        :type :question
+        :option-type :ok-cancel
+        :type :question
         :content edit-panel
+        
         :success-fn (fn [e] (-> edit-panel
-                               (seesaw.core/config :item)
-                               (seesaw.core/select [:#tag])
+                               (seesaw.core/config :items)
+                               second
                                seesaw.core/text
-                               (doto
-                                 delete-tile
-                                 add-tile)))))))
+                               update-tag))))))
 
 (defn show-panel
   "Panel to show site's username and password."
