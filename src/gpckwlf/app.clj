@@ -194,9 +194,11 @@
               (site-tile-buttons tag)])))
 
 (swap! tiles assoc
-       "Foo" (site-tile "Foo")
-       "Bar" (site-tile "Bar")
-       "Baz" (site-tile "Baz"))
+       "My GMail" (site-tile "My GMail")
+       "Work email" (site-tile "Work email")
+       "Twitter" (site-tile "Twitter")
+       "Facebook" (site-tile "Facebook")
+       "Github" (site-tile "Github"))
 
 (def login-username
   (seesaw.core/text :id :username
@@ -216,8 +218,7 @@
                                          (println "Password:"
                                                   (seesaw.core/text
                                                    login-password))
-                                         (gpckwlf.seesaw/display-frame
-                                          main-window)
+                                         (seesaw.core/show! main-window)
                                          (seesaw.core/hide! login-window))]))
 
 (def exit-button
@@ -302,7 +303,7 @@
 (def main-panel
   (seesaw.core/border-panel
    :north control-panel
-   :center site-tiles))
+   :center site-tiles-scroll))
 
 (defn logout
   ([]
@@ -321,6 +322,12 @@
    :title    "gpckwlf"
    :icon     (clojure.java.io/resource "gpckwlf/icons/16x16/logo.png")
    :content  main-panel
+
+   :width  600
+   :height 400
+
+   :minimum-size [300 :by 150]
+
    :on-close :exit))
 
 (defn launch
