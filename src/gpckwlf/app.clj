@@ -1,16 +1,20 @@
 (ns gpckwlf.app
   "Main application."
   (:require [seesaw bind core]
-            [gpckwlf password seesaw]))
+            [gpckwlf password seesaw str]))
 
 (declare add-tile delete-tile edit-window login-window logout main-window
          settings-window show-panel show-window site-tile)
 
 (def tile-width 100)
 (def tile-height 100)
+(def ^:dynamic *tag-length* 32)
 
 (def tiles (atom (sorted-map)))
 (def inactivity-timeout (atom 30))
+
+(defn tag-text
+  ([tag] (gpckwlf.str/pad tag *tag-length*)))
 
 (defn add-tile
   ([tag]
@@ -189,7 +193,9 @@
   "Returns a new site tile with the given tag."
   ([tag] {:pre (string? tag)}
      (seesaw.core/vertical-panel
-      :items [(seesaw.core/border-panel :west tag
+      :items [(seesaw.core/border-panel :west (seesaw.core/label
+                                               :text (tag-text tag)
+                                               :resource ::tag)
                                         :east (delete-button tag))
               (site-tile-buttons tag)])))
 
