@@ -3,13 +3,14 @@
   (:require [seesaw bind core]
             [gpckwlf password seesaw]))
 
-(declare add-tile delete-tile edit-window logout
-         show-panel show-window site-tile)
+(declare add-tile delete-tile edit-window login-window logout main-window
+         settings-window show-panel show-window site-tile)
 
 (def tile-width 100)
 (def tile-height 100)
 
 (def tiles (atom (sorted-map)))
+(def inactivity-timeout (atom 30))
 
 (defn add-tile
   ([tag]
@@ -101,7 +102,7 @@
         :option-type :ok-cancel
         :type :question
         :content edit-panel
-        
+        :resizable? false
         :success-fn (fn [e] (-> edit-panel
                                (seesaw.core/config :items)
                                second
@@ -117,9 +118,12 @@
                                           :id :password)]
        (seesaw.core/grid-panel
         :columns 3
-        :items ["Username" tag ""
+        :items ["Username"
+                tag
+                "",
 
-                "Password" password
+                "Password"
+                password
                 (seesaw.core/button
                  :resource ::show
                  :margin 0
@@ -127,9 +131,9 @@
 
 (defn show-window
   ([tag]
-     (println "BUT SOMEHOW THIS IS OK?!?!:" (type (show-panel tag)))
      (seesaw.core/dialog
       :resource ::show-window
+      :resizable? false
       :content (show-panel tag))))
 
 (defn add-popup
@@ -138,6 +142,7 @@
 
 (def add-button
   (seesaw.core/button :resource ::add
+                      :margin 0
                       :listen [:action add-popup]))
 
 (defn delete-button
@@ -203,10 +208,21 @@
                         :columns 10))
 
 (def login-button
-  (seesaw.core/button :resource ::login))
+  (seesaw.core/button :resource ::login
+                      :listen [:action (fn [e]
+                                         (println "Username:"
+                                                  (seesaw.core/text
+                                                   login-username))
+                                         (println "Password:"
+                                                  (seesaw.core/text
+                                                   login-password))
+                                         (gpckwlf.seesaw/display-frame
+                                          main-window)
+                                         (seesaw.core/hide! login-window))]))
 
 (def exit-button
-  (seesaw.core/button :resource ::exit))
+  (seesaw.core/button :resource ::exit
+                      :listen [:action (fn [e] (System/exit 0))]))
 
 (def login-panel
   (seesaw.core/grid-panel
@@ -214,6 +230,36 @@
    :items ["Username"   login-username
            "Password"   login-password
            login-button exit-button]))
+
+(def login-window
+  (seesaw.core/dialog
+   :resource ::login-window
+   :content login-panel
+   :resizable? false
+   :options [login-button
+             exit-button]))
+
+(def settings-panel
+  (seesaw.core/vertical-panel
+   :items ["Inactivity Timeout (in minutes)"
+           (seesaw.core/text :text @inactivity-timeout),
+
+           "Old Password"
+           (seesaw.core/password :echo-char \*
+                                 :id :old-password)
+
+           "New Password"
+           (seesaw.core/password :echo-char \*
+                                 :id :new-password)
+           "Confirm New Password"
+           (seesaw.core/password :echo-char \*
+                                 :id :new-password-confirm)]))
+
+(def settings-window
+  (seesaw.core/dialog
+   :option-type :ok-cancel
+   :resizable? false
+   :content settings-panel))
 
 (def site-tiles
   (gpckwlf.seesaw/wrap-panel
@@ -237,41 +283,32 @@
 (def settings-button
   (seesaw.core/button :resource ::settings
                       :margin 0
-                      :listen [:action (fn [e] (println "settings!!"))]))
-
+                      :listen [:action (fn [e]
+                                         (gpckwlf.seesaw/display-frame
+                                          settings-window))]))
 
 (def logout-button
   (seesaw.core/button :resource ::logout
                       :margin 0
                       :listen [:action (fn [e] (logout))]))
 
-(def settings-panel
+(def control-panel
   (seesaw.core/horizontal-panel
 ;   :align :right
    :items [refresh-button settings-button logout-button]))
 
+
+
 (def main-panel
   (seesaw.core/border-panel
-   :north settings-panel
+   :north control-panel
    :center site-tiles))
-
-(def card-panel
-  (seesaw.core/card-panel
-   :items [[login-panel :login-panel]
-           [main-panel  :main-panel]]))
 
 (defn logout
   ([]
-     (seesaw.core/show-card! card-panel
-                             :login-panel)))
+     (seesaw.core/hide! main-window)
+     (seesaw.core/show! login-window)))
 
-; this is not how you do it lol
-(seesaw.core/listen login-button
-                    :action (fn [e] (seesaw.core/show-card! card-panel
-                                                           :main-panel)))
-
-(seesaw.core/listen exit-button
-                    :action (fn [e] (System/exit 0)))
 
 (seesaw.bind/bind tiles
                   (seesaw.bind/transform #(-> %
@@ -279,19 +316,14 @@
                                               (concat [add-button])))
                   (seesaw.bind/property site-tiles :items))
 
-;(println (clojure.java.io/resource "gpckwlf/icons/16x16/logo.png"))
-;(System/exit 0)
-
 (def main-window
   (seesaw.core/frame
    :title    "gpckwlf"
    :icon     (clojure.java.io/resource "gpckwlf/icons/16x16/logo.png")
-   :content  card-panel
+   :content  main-panel
    :on-close :exit))
-
-;(seesaw.core/show-options main-window)
 
 (defn launch
   "Launches the main window"
   ([]
-     (gpckwlf.seesaw/display-frame main-window)))
+     (gpckwlf.seesaw/display-frame login-window)))

@@ -1,8 +1,8 @@
-(defproject gpckwlf "0.1.0-SNAPSHOT"
+(defproject gpckwlf "0.1.0"
   :description "Graphical frontend to pckwlf."
-  :url "http://example.com/FIXME"
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :url "https://github.com/wlfgng/gpckwlf"
+  :license {:name "The Unlicense"
+            :url "http://unlicense.org/"}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [seesaw "1.4.4"]]
   :java-source-paths ["src/util/java"]
