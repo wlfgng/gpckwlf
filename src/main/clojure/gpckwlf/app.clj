@@ -1,7 +1,8 @@
 (ns gpckwlf.app
   "Main application."
   (:require [seesaw bind core]
-            [gpckwlf password seesaw str]))
+            [gpckwlf password seesaw str wlf-client])
+  (:import [pckwlf.java RespType]))
 
 (declare add-tile delete-tile edit-window login-window logout main-window
          settings-window show-panel show-window site-tile)
@@ -12,6 +13,9 @@
 
 (def tiles (atom (sorted-map)))
 (def inactivity-timeout (atom 30))
+
+(def client
+  (atom nil))
 
 (defn tag-text
   ([tag] (gpckwlf.str/pad tag *tag-length*)))
@@ -199,6 +203,10 @@
                                         :east (delete-button tag))
               (site-tile-buttons tag)])))
 
+(defn refresh
+  "Refreshes passwords and tiles"
+  ([] (println client)))
+
 (swap! tiles assoc
        "My GMail" (site-tile "My GMail")
        "Work email" (site-tile "Work email")
@@ -215,18 +223,30 @@
                         :id :password
                         :columns 10))
 
+(defn login-action
+  ([e]
+     (reset! client (gpckwlf.wlf-client/make-client))
+     (let [[username password] (map seesaw.core/text [login-username
+                                                      login-password])
+           _ (println username password)
+           response (gpckwlf.wlf-client/login-account @client
+                                              (seesaw.core/text
+                                               login-username)
+                                              (seesaw.core/text
+                                               login-password))]
+       (case (.getType response)
+         RespType/SUCCESS
+         (do (seesaw.core/show! main-window)
+             (seesaw.core/hide! login-window)
+             (refresh))
+
+         ; failure
+         (do (reset! client nil)
+             (seesaw.core/alert "Failure to log in"))))))
+
 (def login-button
   (seesaw.core/button :resource ::login
-                      :listen [:action (fn [e]
-                                         
-                                         (println "Username:"
-                                                  (seesaw.core/text
-                                                   login-username))
-                                         (println "Password:"
-                                                  (seesaw.core/text
-                                                   login-password))
-                                         (seesaw.core/show! main-window)
-                                         (seesaw.core/hide! login-window))]))
+                      :listen [:action login-action]))
 
 (def exit-button
   (seesaw.core/button :resource ::exit
