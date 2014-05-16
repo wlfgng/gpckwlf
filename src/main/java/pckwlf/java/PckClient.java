@@ -137,6 +137,8 @@ public class PckClient {
 				System.out.println("That username is already taken");
 				return new Response(RespType.FAILURE,"Username taken");
 			} else if (resp.getType() == RespType.FAILURE) {
+			    this.pckName = pckName;
+			    loggedIn = true;
 				return add(LOGIN_TAG, pckName, password);
 			}
 			return resp;

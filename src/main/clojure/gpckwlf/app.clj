@@ -5,7 +5,7 @@
   (:import [pckwlf.java RespType]))
 
 (declare add-tile delete-tile edit-window login-window logout main-window
-         settings-window show-panel show-window site-tile)
+         refresh settings-window show-panel show-window site-tile)
 
 (def tile-width 100)
 (def tile-height 100)
@@ -16,6 +16,12 @@
 
 (def client
   (atom nil))
+(def results
+  (atom #{}))
+
+(defn get-data
+  "Get username/password associated with tag"
+  ([tag] (gpckwlf.wlf-client/get-by-tag @results tag)))
 
 (defn tag-text
   ([tag] (gpckwlf.str/pad tag *tag-length*)))
@@ -26,11 +32,15 @@
 
 (defn delete-tile
   ([tag]
-     (swap! tiles dissoc tag)))
+     (let [response (gpckwlf.wlf-client/remove-entry @client tag)]
+       (if (gpckwlf.wlf-client/success? response)
+         (refresh)
+         (seesaw.core/alert "Failed to delete entry.")))))
 
 (defn copy-password
   ([tag]
-     (gpckwlf.password/text->clipboard tag)))
+     (gpckwlf.password/text->clipboard (:password (gpckwlf.wlf-client/get-by-tag
+                                                   @results tag)))))
 
 (defn show-password
   ([tag]
@@ -59,10 +69,20 @@
         :content form
         :option-type :ok-cancel
         :type :question
-        :success-fn (fn [e] (-> form
-                               (seesaw.core/select [:#tag])
-                               seesaw.core/text
-                               add-tile))))))
+        :success-fn (fn [e] (let [tag (-> form
+                                         (seesaw.core/select [:#tag])
+                                         seesaw.core/text)
+                                 username (-> form
+                                              (seesaw.core/select [:#username])
+                                              seesaw.core/text)
+                                 password (-> form
+                                              (seesaw.core/select [:#password])
+                                              seesaw.core/text)
+                                 response (gpckwlf.wlf-client/add-entry
+                                           @client tag username password)]
+                             (if (gpckwlf.wlf-client/success? response)
+                               (refresh)
+                               (seesaw.core/alert "Failed to add entry"))))))))
 
 (defn show-hide-password
   "Show/hide password field."
@@ -81,12 +101,7 @@
                                           :id :password)]
        (seesaw.core/grid-panel
         :columns 3
-        :items ["Tag"
-                (seesaw.core/text :text tag
-                                  :id :tag)
-                "",
-                
-                "Username"
+        :items ["Username"
                 (seesaw.core/text :text "Username"
                                   :id :username)
                 "",
@@ -101,41 +116,47 @@
 (defn edit-window
   ""
   ([tag]
-     (let [edit-panel (edit-panel tag)
-           update-tag (fn [new-tag]
-                        (delete-tile tag)
-                        (add-tile new-tag))]
+     (let [edit-panel (edit-panel tag)]
        (seesaw.core/dialog
         :resource ::edit-window
         :option-type :ok-cancel
         :type :question
         :content edit-panel
         :resizable? false
-        :success-fn (fn [e] (-> edit-panel
-                               (seesaw.core/config :items)
-                               second
-                               seesaw.core/text
-                               update-tag))))))
+        :success-fn (fn [e] (let [username (-> edit-panel
+                                              (seesaw.core/select
+                                               [:#username])
+                                              seesaw.core/text)
+                                 password (-> edit-panel
+                                              (seesaw.core/select
+                                               [:#password])
+                                              seesaw.core/text)
+                                 response (gpckwlf.wlf-client/add-entry
+                                           @client tag username password)]
+                             (if (gpckwlf.wlf-client/success? response)
+                               (refresh)
+                               (seesaw.core/alert "Failed to edit entry"))))))))
 
 (defn show-panel
   "Panel to show site's username and password."
   ([tag]
-     (let [password (seesaw.core/password :text tag
-                                          :echo-char \*
-                                          :editable? false
-                                          :id :password)]
+     (let [{:keys [username password]} (get-data tag)
+           pass-field (seesaw.core/password :text password
+                                            :echo-char \*
+                                            :editable? false
+                                            :id :password)]
        (seesaw.core/grid-panel
         :columns 3
         :items ["Username"
-                tag
+                username
                 "",
 
                 "Password"
-                password
+                pass-field
                 (seesaw.core/button
                  :resource ::show
                  :margin 0
-                 :listen [:action (fn [e] (show-hide-password password))])]))))
+                 :listen [:action (fn [e] (show-hide-password pass-field))])]))))
 
 (defn show-window
   ([tag]
@@ -203,16 +224,35 @@
                                         :east (delete-button tag))
               (site-tile-buttons tag)])))
 
+
+
+(defn make-tiles
+  "Makes a map of tag->tile from response map."
+  ([results]
+     (let [tags (gpckwlf.wlf-client/get-tags results)]
+       (into (sorted-map)
+             (map (fn [tag] [tag (site-tile tag)])
+                  tags)))))
+
+(defn refresh-tiles
+  "Refreshes tiles"
+  ([]
+     (reset! tiles
+             (make-tiles @results))))
+
 (defn refresh
   "Refreshes passwords and tiles"
-  ([] (println client)))
+  ([] (when-let [re (gpckwlf.wlf-client/get-all @client)]
+        (reset! results re)
+        (refresh-tiles))))
 
-(swap! tiles assoc
-       "My GMail" (site-tile "My GMail")
-       "Work email" (site-tile "Work email")
-       "Twitter" (site-tile "Twitter")
-       "Facebook" (site-tile "Facebook")
-       "Github" (site-tile "Github"))
+(comment
+  (swap! tiles assoc
+         "My GMail" (site-tile "My GMail")
+         "Work email" (site-tile "Work email")
+         "Twitter" (site-tile "Twitter")
+         "Facebook" (site-tile "Facebook")
+         "Github" (site-tile "Github")))
 
 (def login-username
   (seesaw.core/text :id :username
@@ -226,21 +266,15 @@
 (defn login-action
   ([e]
      (reset! client (gpckwlf.wlf-client/make-client))
-     (let [[username password] (map seesaw.core/text [login-username
-                                                      login-password])
-           _ (println username password)
-           response (gpckwlf.wlf-client/login-account @client
-                                              (seesaw.core/text
-                                               login-username)
-                                              (seesaw.core/text
-                                               login-password))]
-       (case (.getType response)
-         RespType/SUCCESS
+     (let [success? (gpckwlf.wlf-client/login-account @client
+                                                      (seesaw.core/text
+                                                       login-username)
+                                                      (seesaw.core/text
+                                                       login-password))]
+       (if success?
          (do (seesaw.core/show! main-window)
              (seesaw.core/hide! login-window)
              (refresh))
-
-         ; failure
          (do (reset! client nil)
              (seesaw.core/alert "Failure to log in"))))))
 
@@ -306,7 +340,7 @@
                       ;; (clojure.java.io/resource
                       ;;  "gpckwlf/icons/32x32/refresh.png")
                       :margin 0
-                      :listen [:action (fn [e] (println "refreshing"))]))
+                      :listen [:action (fn [e] (refresh))]))
 
 (def settings-button
   (seesaw.core/button :resource ::settings
@@ -334,6 +368,8 @@
 
 (defn logout
   ([]
+     (reset! client nil)
+     (reset! results nil)
      (seesaw.core/hide! main-window)
      (seesaw.core/show! login-window)))
 
